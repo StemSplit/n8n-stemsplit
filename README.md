@@ -1,27 +1,34 @@
 # n8n-nodes-stemsplit
 
-An [N8N](https://n8n.io) community node for [StemSplit](https://stemsplit.io) — AI-powered audio stem separation.
-
-Extract vocals, drums, bass, guitar, piano, and other stems from any audio file using state-of-the-art AI models.
-
 [![npm](https://img.shields.io/npm/v/n8n-nodes-stemsplit)](https://www.npmjs.com/package/n8n-nodes-stemsplit)
 [![N8N Community Nodes](https://img.shields.io/badge/n8n-community%20node-orange)](https://docs.n8n.io/integrations/community-nodes/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+An N8N community node that integrates [StemSplit](https://stemsplit.io) into your automation workflows — bringing AI-powered **n8n audio separation** to any pipeline. Use it to build n8n vocal remover flows, automate stem splitting for music production tools, batch-process audio libraries, or power any music AI workflow that needs clean vocal and instrumental tracks.
+
+With this node you can submit audio files via URL or binary data, poll for completion, and receive presigned download URLs for every stem — all without leaving N8N.
 
 ---
 
-## Features
+## What It Does
 
-- **Separate Stems** — Submit an audio file and get a job ID immediately (fire-and-forget)
-- **Separate Stems (Wait for Completion)** — Submit + poll until done, then return presigned download URLs for all stems
-- **Get Job** — Fetch the current status and output URLs of any job by ID
-- **List Jobs** — Paginate through your job history with optional status filtering
-- **Get Balance** — Check your remaining credit balance
+The **n8n-nodes-stemsplit** node exposes the full [StemSplit API](https://stemsplit.io/docs/api) as native N8N operations:
+
+| Operation | Description |
+|-----------|-------------|
+| **Separate Stems** | Submit audio and return immediately with a job ID (fire-and-forget) |
+| **Separate Stems (Wait)** | Submit + poll until complete, then return presigned download URLs |
+| **Get Job** | Fetch the status and output URLs of any job by ID |
+| **List Jobs** | Paginate through job history with optional status filtering |
+| **Get Balance** | Check remaining credit balance in seconds and minutes |
+
+Supported stem types: **vocals**, **instrumental**, **drums**, **bass**, **piano**, **guitar**, and **other**.
 
 ---
 
 ## Installation
 
-### In N8N (Community Nodes UI)
+### Via the N8N Community Nodes UI
 
 1. Open **Settings → Community Nodes**
 2. Click **Install a community node**
@@ -36,12 +43,12 @@ npm install n8n-nodes-stemsplit
 
 ---
 
-## Authentication
+## Credentials
 
-1. Go to [stemsplit.io/app/settings/api](https://stemsplit.io/app/settings/api) and generate an API key (starts with `sk_live_`).
-2. In N8N, create a new **StemSplit API** credential and paste your key.
+1. Go to [stemsplit.io/app/settings/api](https://stemsplit.io/app/settings/api) and generate an API key (format: `sk_live_...`).
+2. In N8N, add a new **StemSplit API** credential and paste your key.
 
-The node authenticates with `Authorization: Bearer <your-key>` on every request to `https://stemsplit.io/api/v1`.
+The node sends `Authorization: Bearer <key>` on every request to `https://stemsplit.io/api/v1`.
 
 ---
 
@@ -49,20 +56,21 @@ The node authenticates with `Authorization: Bearer <your-key>` on every request 
 
 ### Separate Stems
 
-Submits an audio file for processing and **returns immediately** with the job ID. Use this when you want to submit many jobs in parallel and check status later with **Get Job**.
+Submits audio for processing and **returns immediately** with a job ID. Use this when you want to submit many jobs in parallel and poll status later with **Get Job**.
 
-**Input source options:**
-- **Binary File** — pass the audio file as a binary N8N item (e.g., from an HTTP Request or Read Binary File node)
-- **URL** — provide a publicly accessible URL; StemSplit will fetch it server-side
+**Input source:**
+- **Binary File** — pass audio as a binary N8N item (from an HTTP Request, Read Binary File, or any binary-capable node)
+- **URL** — provide a publicly accessible URL; StemSplit fetches it server-side
 
 **Parameters:**
+
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| Output Type | `VOCALS + Instrumental` | Which stems to separate into |
-| Quality | `Best` | Processing quality (`Fast`, `Balanced`, `Best`) |
-| Output Format | `MP3` | Output file format (`MP3`, `WAV`, `FLAC`) |
+| Output Type | `VOCALS + Instrumental` | Which stems to extract (see Output Types below) |
+| Quality | `Best` | Processing quality: `Fast`, `Balanced`, or `Best` |
+| Output Format | `MP3` | Output file format: `MP3`, `WAV`, or `FLAC` |
 | File Name | _(auto)_ | Override the job's display name |
-| Metadata | `{}` | Custom JSON object echoed back in all job responses |
+| Metadata | `{}` | Custom JSON echoed back in all job responses |
 
 **Output fields:** `id`, `status`, `progress`, `creditsRequired`, `estimatedSeconds`, `createdAt`, `options`, `input`, `metadata`
 
@@ -70,48 +78,50 @@ Submits an audio file for processing and **returns immediately** with the job ID
 
 ### Separate Stems (Wait for Completion)
 
-Submits an audio file and **polls** until the job reaches `COMPLETED` (or throws on `FAILED`/timeout). Returns presigned download URLs for every stem.
+Submits audio and **polls** until the job reaches `COMPLETED` — or throws on `FAILED` or timeout. Returns presigned download URLs for every stem.
 
-Additional parameters:
+**Additional parameters:**
+
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | Timeout (Seconds) | `600` | Give up after this many seconds |
-| Poll Interval (Seconds) | `5` | How often to check the job status |
+| Poll Interval (Seconds) | `5` | How often to check job status |
 
-**Output fields** (beyond the job fields above):
+**Additional output fields:**
 - `vocalsUrl` / `vocalsExpiresAt`
 - `instrumentalUrl` / `instrumentalExpiresAt`
 - `drumsUrl`, `bassUrl`, `otherUrl`, `pianoUrl`, `guitarUrl` (when applicable)
 
-> Presigned URLs expire **1 hour** after the job completes. Output files expire and are deleted **14 days** after creation.
+> **Note:** Presigned URLs expire **1 hour** after job completion. Output files are deleted **14 days** after creation.
 
 ---
 
 ### Get Job
 
-Fetch a job by its ID. Returns the same fields as **Separate Stems (Wait)** including any available output URLs.
+Fetch a single job by ID. Returns the same fields as **Separate Stems (Wait)**, including all available output URLs.
 
 ---
 
 ### List Jobs
 
-Returns a list of jobs with optional `status` filter and pagination via `limit`/`offset`.
+Returns a paginated list of jobs. Optional `status` filter (`PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`) and pagination via `limit`/`offset`.
 
 ---
 
 ### Get Balance
 
-Returns:
+Returns your current credit balance:
+
 ```json
 {
   "balanceSeconds": 3600,
   "balanceMinutes": 60,
   "balanceFormatted": "60 minutes",
-  "updatedAt": "..."
+  "updatedAt": "2026-05-21T00:00:00Z"
 }
 ```
 
-**Credits:** 1 credit = 1 second of audio. Credits are charged at job creation. If your balance is insufficient, the node throws a `402 INSUFFICIENT_CREDITS` error.
+**Credit model:** 1 credit = 1 second of audio. Credits are deducted at job submission. If your balance is insufficient, the node throws a `402 INSUFFICIENT_CREDITS` error.
 
 ---
 
@@ -129,32 +139,63 @@ Returns:
 
 ## Supported Audio Formats
 
-Input: `mp3`, `wav`, `flac`, `m4a`, `ogg`, `webm`, `aac`, `wma`
-Max file size: **50 MB**
+**Input:** `mp3`, `wav`, `flac`, `m4a`, `ogg`, `webm`, `aac`, `wma`  
+**Max file size:** 50 MB
 
 ---
 
-## Example Workflow
+## Example Workflows
+
+### Basic n8n vocal remover pipeline
 
 ```
-[HTTP Request (download audio)] → [StemSplit: Separate Stems (Wait)] → [HTTP Request (download vocals)]
+[HTTP Request: download audio]
+  → [StemSplit: Separate Stems (Wait)]
+  → [HTTP Request: download vocals URL]
+  → [Write Binary File: save vocals.mp3]
 ```
 
-Or with binary data from disk:
+### Batch stem splitter from local files
 
 ```
-[Read Binary File] → [StemSplit: Separate Stems (Wait)] → [HTTP Request (save stems)]
+[Read Binary File: song.mp3]
+  → [StemSplit: Separate Stems (Wait), Output: SIX_STEMS]
+  → [Split In Batches]
+  → [HTTP Request: upload each stem to S3]
+```
+
+### Fire-and-forget with webhook callback
+
+```
+[Webhook trigger]
+  → [StemSplit: Separate Stems]      ← returns job ID instantly
+  → [Set: store job ID in DB]
+  → [Cron: poll every 30s via Get Job]
+  → [IF: status === COMPLETED]
+  → [HTTP Request: notify downstream service]
 ```
 
 ---
 
-## API Reference
+## Why StemSplit?
 
-The StemSplit public API base URL is `https://stemsplit.io/api/v1`.
+StemSplit runs state-of-the-art source separation models (HTDemucs and similar) on GPU infrastructure purpose-built for audio. If you need to [separate vocals online](https://stemsplit.io/vocal-remover) without managing your own ML stack, StemSplit's API gives you:
 
-Full OpenAPI spec: `GET https://stemsplit.io/api/v1/openapi`
+- **Sub-minute turnaround** on most tracks (Fast/Balanced quality)
+- **High-fidelity six-stem output** — vocals, drums, bass, piano, guitar, other
+- **Simple credit model** — pay per second of audio processed, no subscriptions required
+- **No file hosting needed** — pass a URL and StemSplit fetches it server-side
 
-Developer docs: [stemsplit.io/docs/api](https://stemsplit.io/docs/api)
+Full API docs: [stemsplit.io/docs/api](https://stemsplit.io/docs/api)  
+OpenAPI spec: `GET https://stemsplit.io/api/v1/openapi`
+
+---
+
+## Requirements
+
+- N8N v0.200 or later
+- A StemSplit account with an API key — sign up at [stemsplit.io](https://stemsplit.io)
+- Sufficient credit balance for your audio files (check with **Get Balance**)
 
 ---
 
