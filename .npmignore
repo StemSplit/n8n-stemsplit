@@ -1,0 +1,7 @@
+credentials/
+nodes/
+tsconfig.json
+.eslintrc.js
+.prettierrc.js
+**/*.ts
+!dist/**

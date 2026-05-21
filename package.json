@@ -1,0 +1,67 @@
+{
+  "name": "n8n-nodes-stemsplit",
+  "version": "0.1.0",
+  "description": "N8N community node for StemSplit — AI-powered audio stem separation",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "stemsplit",
+    "stem-separation",
+    "audio",
+    "ai",
+    "music"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/StemSplit/n8n-stemsplit#readme",
+  "bugs": {
+    "url": "https://github.com/StemSplit/n8n-stemsplit/issues"
+  },
+  "author": {
+    "name": "StemSplit",
+    "email": "hello@stemsplit.io",
+    "url": "https://stemsplit.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StemSplit/n8n-stemsplit.git"
+  },
+  "scripts": {
+    "build": "tsc && npm run copy-icons && npm run copy-codex",
+    "copy-icons": "copyfiles -u 1 nodes/**/*.svg dist/nodes/",
+    "copy-codex": "copyfiles -u 1 nodes/**/*.json dist/nodes/",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials --ext .ts",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/StemSplitApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/StemSplit/StemSplit.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "copyfiles": "^2.4.1",
+    "eslint": "^8.57.0",
+    "n8n-workflow": "^1.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
