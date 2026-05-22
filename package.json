@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-stemsplit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "N8N community node for StemSplit — AI-powered audio stem separation",
   "keywords": [
     "n8n-community-node-package",
@@ -18,7 +18,7 @@
   },
   "author": {
     "name": "StemSplit",
-    "email": "hello@stemsplit.io",
+    "email": "support@stemsplit.io",
     "url": "https://stemsplit.io"
   },
   "repository": {
