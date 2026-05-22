@@ -6,7 +6,7 @@ if [ "$COMMIT_SOURCE" = "merge" ] || [ "$COMMIT_SOURCE" = "squash" ]; then
     exit 0
 fi
 
-if grep -qiE "(Co-authored-by:.*cursor|Co-authored-by:.*claude|Made-with:.*cursor|Made-with:.*\claude)" "$COMMIT_MSG_FILE" 2>/dev/null; then
+if grep -qiE "(Co-authored-by:.*cursor|Co-authored-by:.*claude|Made-with:.*cursor|Made-with:.*claude)" "$COMMIT_MSG_FILE" 2>/dev/null; then
     echo "ERROR: AI co-author trailers are not allowed." >&2
     exit 1
 fi
