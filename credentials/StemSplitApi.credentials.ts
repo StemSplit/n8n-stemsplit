@@ -1,4 +1,9 @@
-import type { ICredentialType, INodeProperties } from "n8n-workflow";
+import type {
+	IAuthenticateGeneric,
+	ICredentialTestRequest,
+	ICredentialType,
+	INodeProperties,
+} from "n8n-workflow";
 
 export class StemSplitApi implements ICredentialType {
 	name = "stemSplitApi";
@@ -19,8 +24,8 @@ export class StemSplitApi implements ICredentialType {
 		},
 	];
 
-	authenticate = {
-		type: "generic" as const,
+	authenticate: IAuthenticateGeneric = {
+		type: "generic",
 		properties: {
 			headers: {
 				Authorization: "=Bearer {{$credentials.apiKey}}",
@@ -28,7 +33,7 @@ export class StemSplitApi implements ICredentialType {
 		},
 	};
 
-	test = {
+	test: ICredentialTestRequest = {
 		request: {
 			baseURL: "https://stemsplit.io/api/v1",
 			url: "/balance",
