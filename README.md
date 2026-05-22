@@ -4,9 +4,9 @@
 [![N8N Community Nodes](https://img.shields.io/badge/n8n-community%20node-orange)](https://docs.n8n.io/integrations/community-nodes/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An N8N community node that integrates [StemSplit](https://stemsplit.io) into your automation workflows — bringing AI-powered **n8n audio separation** to any pipeline. Use it to build n8n vocal remover flows, automate stem splitting for music production tools, batch-process audio libraries, or power any music AI workflow that needs clean vocal and instrumental tracks.
+Separate vocals, drums, bass, and other stems from any audio file — directly inside N8N. `n8n-nodes-stemsplit` connects your workflows to the [StemSplit API](https://stemsplit.io), letting you remove vocals from a song, isolate instrumentals, extract drum tracks, or split full 6-stem mixes (vocals, drums, bass, guitar, piano, other) — without any ML infrastructure.
 
-With this node you can submit audio files via URL or binary data, poll for completion, and receive presigned download URLs for every stem — all without leaving N8N.
+Submit audio via URL or binary upload, wait for processing, and get presigned download URLs for each stem — all as native N8N nodes.
 
 ---
 
