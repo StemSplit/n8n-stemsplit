@@ -5,7 +5,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from "n8n-workflow";
-import { NodeApiError, NodeOperationError } from "n8n-workflow";
+import { NodeApiError, NodeOperationError, sleep } from "n8n-workflow";
 
 const API_BASE = "https://stemsplit.io/api/v1";
 
@@ -174,7 +174,7 @@ async function pollJobUntilComplete(
 			});
 		}
 
-		await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+		await sleep(pollIntervalMs);
 		elapsed = Date.now() - startTime;
 	}
 
