@@ -12,17 +12,17 @@ Submit audio via URL or binary upload, wait for processing, and get presigned do
 
 ## What It Does
 
-The **n8n-nodes-stemsplit** node exposes the full [StemSplit API](https://stemsplit.io/docs/api) as native N8N operations:
+Accepts audio via **public URL** or **binary file upload**. Submits to the StemSplit API for processing. Returns presigned download URLs for each stem.
 
-| Operation | Description |
-|-----------|-------------|
-| **Separate Stems** | Submit audio and return immediately with a job ID (fire-and-forget) |
-| **Separate Stems (Wait)** | Submit + poll until complete, then return presigned download URLs |
-| **Get Job** | Fetch the status and output URLs of any job by ID |
-| **List Jobs** | Paginate through job history with optional status filtering |
-| **Get Balance** | Check remaining credit balance in seconds and minutes |
+| Operation | When to use it |
+|-----------|----------------|
+| **Separate Stems (Wait)** | You want vocals, drums, bass, etc. back immediately in the same workflow — submits and polls until complete |
+| **Separate Stems** | Fire-and-forget — submit many jobs in parallel and poll status later |
+| **Get Job** | Check status or retrieve output URLs for a previously submitted job |
+| **List Jobs** | Browse job history or filter by status (`PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`) |
+| **Get Balance** | Check remaining credits before a batch run |
 
-Supported stem types: **vocals**, **instrumental**, **drums**, **bass**, **piano**, **guitar**, and **other**.
+Outputs presigned download URLs for: **vocals · instrumental · drums · bass · piano · guitar · other**
 
 ---
 

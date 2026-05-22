@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-stemsplit",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Separate vocals, drums, bass, and other stems from any audio file inside N8N. Remove vocals, isolate instrumentals, extract drum tracks, or split full 6-stem mixes \u2014 powered by the StemSplit API.",
   "keywords": [
     "n8n-community-node-package",
