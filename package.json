@@ -45,7 +45,7 @@
   },
   "scripts": {
     "build": "tsc && npm run copy-icons && npm run copy-codex",
-    "copy-icons": "copyfiles -u 1 nodes/**/*.svg dist/nodes/",
+    "copy-icons": "copyfiles -u 1 nodes/**/*.svg nodes/**/*.png dist/nodes/",
     "copy-codex": "copyfiles -u 1 nodes/**/*.json dist/nodes/",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",

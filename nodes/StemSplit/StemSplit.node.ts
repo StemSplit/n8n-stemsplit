@@ -215,7 +215,7 @@ export class StemSplit implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: "StemSplit",
 		name: "stemSplit",
-		icon: "file:stemsplit.svg",
+		icon: "file:stemsplit.png",
 		group: ["transform"],
 		version: 1,
 		subtitle: `={{${JSON.stringify(OPERATION_LABELS)}[$parameter["operation"]]}}`,
