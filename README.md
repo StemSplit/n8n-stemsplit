@@ -6,13 +6,13 @@
 
 Separate vocals, drums, bass, and other stems from any audio file — directly inside N8N. `n8n-nodes-stemsplit` connects your workflows to the [StemSplit API](https://stemsplit.io), letting you remove vocals from a song, isolate instrumentals, extract drum tracks, or split full 6-stem mixes (vocals, drums, bass, guitar, piano, other) — without any ML infrastructure.
 
-Submit audio via URL or binary upload, wait for processing, and get presigned download URLs for each stem — all as native N8N nodes.
+Submit audio via URL, binary upload, YouTube video URL, or SoundCloud track URL, wait for processing, and get presigned download URLs for each stem — all as native N8N nodes.
 
 ---
 
 ## What It Does
 
-Accepts audio via **public URL** or **binary file upload**. Submits to the StemSplit API for processing. Returns presigned download URLs for each stem.
+Accepts audio via **public URL**, **binary file upload**, **YouTube video URL**, or **SoundCloud track URL**. Submits to the StemSplit API for processing. Returns presigned download URLs for each stem.
 
 | Operation | When to use it |
 |-----------|----------------|
@@ -61,6 +61,10 @@ Submits audio for processing and **returns immediately** with a job ID. Use this
 **Input source:**
 - **Binary File** — pass audio as a binary N8N item (from an HTTP Request, Read Binary File, or any binary-capable node)
 - **URL** — provide a publicly accessible URL; StemSplit fetches it server-side
+- **YouTube URL** — paste any YouTube video URL; outputs vocals + instrumental (MP3, best quality)
+- **SoundCloud URL** — paste any SoundCloud track URL; outputs vocals + instrumental (MP3, best quality)
+
+> **Note:** For YouTube and SoundCloud inputs, Output Type, Quality, and Format options are fixed (Vocals + Instrumental, Best quality, MP3). The node ignores those fields if set.
 
 **Parameters:**
 
@@ -79,6 +83,14 @@ Submits audio for processing and **returns immediately** with a job ID. Use this
 ### Separate Stems (Wait for Completion)
 
 Submits audio and **polls** until the job reaches `COMPLETED` — or throws on `FAILED` or timeout. Returns presigned download URLs for every stem.
+
+**Input source:**
+- **Binary File** — pass audio as a binary N8N item (from an HTTP Request, Read Binary File, or any binary-capable node)
+- **URL** — provide a publicly accessible URL; StemSplit fetches it server-side
+- **YouTube URL** — paste any YouTube video URL; outputs vocals + instrumental (MP3, best quality)
+- **SoundCloud URL** — paste any SoundCloud track URL; outputs vocals + instrumental (MP3, best quality)
+
+> **Note:** For YouTube and SoundCloud inputs, Output Type, Quality, and Format options are fixed (Vocals + Instrumental, Best quality, MP3). The node ignores those fields if set.
 
 **Additional parameters:**
 
@@ -164,6 +176,14 @@ Returns your current credit balance:
   → [HTTP Request: upload each stem to S3]
 ```
 
+### YouTube stem separator
+
+```
+[StemSplit: Separate Stems (Wait), Input: YouTube URL]
+  → [HTTP Request: download vocals URL]
+  → [Write Binary File: save vocals.mp3]
+```
+
 ### Fire-and-forget with webhook callback
 
 ```
@@ -185,6 +205,7 @@ StemSplit runs state-of-the-art source separation models (HTDemucs and similar) 
 - **High-fidelity six-stem output** — vocals, drums, bass, piano, guitar, other
 - **Simple credit model** — pay per second of audio processed, no subscriptions required
 - **No file hosting needed** — pass a URL and StemSplit fetches it server-side
+- **YouTube & SoundCloud support** — separate stems directly from a video or track URL, no downloading required
 
 Full API docs: [stemsplit.io/docs/api](https://stemsplit.io/docs/api)  
 OpenAPI spec: `GET https://stemsplit.io/api/v1/openapi`
