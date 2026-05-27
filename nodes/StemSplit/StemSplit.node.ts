@@ -153,12 +153,17 @@ async function pollJobUntilComplete(
 	pollIntervalMs: number,
 	timeoutMs: number,
 	itemIndex: number,
+	jobEndpointPrefix = "/jobs",
 ): Promise<StemJobResponse> {
 	const startTime = Date.now();
 	let elapsed = Date.now() - startTime;
 
 	while (elapsed < timeoutMs) {
-		const job = await stemSplitRequest<StemJobResponse>(context, "GET", `/jobs/${jobId}`);
+		const job = await stemSplitRequest<StemJobResponse>(
+			context,
+			"GET",
+			`${jobEndpointPrefix}/${jobId}`,
+		);
 
 		if (job.status === "COMPLETED") return job;
 		if (job.status === "FAILED") {
@@ -293,6 +298,18 @@ export class StemSplit implements INodeType {
 						value: "url",
 						description: "Provide a publicly accessible URL to an audio file",
 					},
+					{
+						name: "YouTube URL",
+						value: "youtube",
+						description:
+							"Paste a YouTube video URL — outputs vocals + instrumental, MP3, best quality",
+					},
+					{
+						name: "SoundCloud URL",
+						value: "soundcloud",
+						description:
+							"Paste a SoundCloud track URL — outputs vocals + instrumental, MP3, best quality",
+					},
 				],
 				default: "binary",
 				noDataExpression: true,
@@ -336,6 +353,46 @@ export class StemSplit implements INodeType {
 			},
 
 			// ──────────────────────────────────────────────────────────
+			// YouTube URL input
+			// ──────────────────────────────────────────────────────────
+			{
+				displayName: "YouTube URL",
+				name: "youtubeUrl",
+				type: "string",
+				displayOptions: {
+					show: {
+						operation: ["separateStems", "separateStemsWait"],
+						inputSource: ["youtube"],
+					},
+				},
+				default: "",
+				required: true,
+				description:
+					"URL of the YouTube video to separate (fixed output: vocals + instrumental, MP3, best quality)",
+				placeholder: "https://www.youtube.com/watch?v=...",
+			},
+
+			// ──────────────────────────────────────────────────────────
+			// SoundCloud URL input
+			// ──────────────────────────────────────────────────────────
+			{
+				displayName: "SoundCloud URL",
+				name: "soundcloudUrl",
+				type: "string",
+				displayOptions: {
+					show: {
+						operation: ["separateStems", "separateStemsWait"],
+						inputSource: ["soundcloud"],
+					},
+				},
+				default: "",
+				required: true,
+				description:
+					"URL of the SoundCloud track to separate (fixed output: vocals + instrumental, MP3, best quality)",
+				placeholder: "https://soundcloud.com/artist/track",
+			},
+
+			// ──────────────────────────────────────────────────────────
 			// Job options
 			// ──────────────────────────────────────────────────────────
 			{
@@ -345,6 +402,9 @@ export class StemSplit implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ["separateStems", "separateStemsWait"],
+					},
+					hide: {
+						inputSource: ["youtube", "soundcloud"],
 					},
 				},
 				options: [
@@ -385,6 +445,9 @@ export class StemSplit implements INodeType {
 					show: {
 						operation: ["separateStems", "separateStemsWait"],
 					},
+					hide: {
+						inputSource: ["youtube", "soundcloud"],
+					},
 				},
 				options: [
 					{
@@ -413,6 +476,9 @@ export class StemSplit implements INodeType {
 					show: {
 						operation: ["separateStems", "separateStemsWait"],
 					},
+					hide: {
+						inputSource: ["youtube", "soundcloud"],
+					},
 				},
 				options: [
 					{ name: "MP3", value: "MP3" },
@@ -435,6 +501,9 @@ export class StemSplit implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ["separateStems", "separateStemsWait"],
+					},
+					hide: {
+						inputSource: ["youtube", "soundcloud"],
 					},
 				},
 				options: [
@@ -612,74 +681,35 @@ export class StemSplit implements INodeType {
 					continue;
 				}
 
-				// ────────────────────────────────────────────
-				// SEPARATE STEMS (submit only) or
-				// SEPARATE STEMS + WAIT
-				// ────────────────────────────────────────────
-				if (operation === "separateStems" || operation === "separateStemsWait") {
-					const inputSource = this.getNodeParameter("inputSource", i) as string;
-					const outputType = this.getNodeParameter("outputType", i) as string;
-					const quality = this.getNodeParameter("quality", i) as string;
-					const outputFormat = this.getNodeParameter("outputFormat", i) as string;
-					const additionalOptions = this.getNodeParameter("additionalOptions", i) as IDataObject;
+			// ────────────────────────────────────────────
+			// SEPARATE STEMS (submit only) or
+			// SEPARATE STEMS + WAIT
+			// ────────────────────────────────────────────
+			if (operation === "separateStems" || operation === "separateStemsWait") {
+				const inputSource = this.getNodeParameter("inputSource", i) as string;
 
-					const jobBody: IDataObject = { outputType, quality, outputFormat };
+				// ── YouTube / SoundCloud fast-path ──
+				if (inputSource === "youtube" || inputSource === "soundcloud") {
+					const isYouTube = inputSource === "youtube";
+					const urlParamName = isYouTube ? "youtubeUrl" : "soundcloudUrl";
+					const urlBodyKey = isYouTube ? "youtubeUrl" : "soundcloudUrl";
+					const createEndpoint = isYouTube ? "/youtube-jobs" : "/soundcloud-jobs";
+					const pollEndpoint = isYouTube ? "/youtube-jobs" : "/soundcloud-jobs";
 
-					if (additionalOptions.fileName) {
-						jobBody.fileName = additionalOptions.fileName;
-					}
-					if (additionalOptions.metadata) {
-						try {
-							const meta =
-								typeof additionalOptions.metadata === "string"
-									? JSON.parse(additionalOptions.metadata as string)
-									: additionalOptions.metadata;
-							if (meta && typeof meta === "object" && Object.keys(meta).length > 0) {
-								jobBody.metadata = meta;
-							}
-						} catch {
-							this.logger.warn(
-								`StemSplit: Could not parse metadata JSON — raw value: ${String(additionalOptions.metadata)}`,
-							);
-						}
+					const trackUrl = this.getNodeParameter(urlParamName, i) as string;
+					if (!trackUrl.trim()) {
+						throw new NodeOperationError(
+							this.getNode(),
+							`${isYouTube ? "YouTube" : "SoundCloud"} URL is required`,
+							{ itemIndex: i },
+						);
 					}
 
-					if (inputSource === "url") {
-						// Direct URL submission
-						const sourceUrl = this.getNodeParameter("sourceUrl", i) as string;
-						if (!sourceUrl.trim()) {
-							throw new NodeOperationError(this.getNode(), "Audio URL is required", { itemIndex: i });
-						}
-						jobBody.sourceUrl = sourceUrl;
-					} else {
-						// Binary upload: POST /upload → PUT file (no auth) → use uploadKey
-						const binaryPropertyName = this.getNodeParameter("binaryPropertyName", i) as string;
-						const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
-
-						const filename = binaryData.fileName ?? "audio.mp3";
-						const mimeType = binaryData.mimeType ?? "audio/mpeg";
-
-						// Step 1: Request presigned upload URL from StemSplit API
-						const upload = await stemSplitRequest<UploadResponse>(this, "POST", "/upload", {
-							filename,
-							contentType: mimeType,
-						});
-
-						// Step 2: PUT binary data directly to the presigned S3/R2 URL — NO auth headers
-						const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
-						await uploadToPresignedUrl(this, upload.uploadUrl, buffer as Buffer, mimeType);
-
-						jobBody.uploadKey = upload.uploadKey;
-						if (!additionalOptions.fileName) {
-							jobBody.fileName = filename;
-						}
-					}
-
-					// Step 3: Create the job
-					const job = await stemSplitRequest<StemJobResponse>(this, "POST", "/jobs", jobBody);
+					const job = await stemSplitRequest<StemJobResponse>(this, "POST", createEndpoint, {
+						[urlBodyKey]: trackUrl,
+					});
 
 					if (operation === "separateStems") {
-						// Return immediately with job ID and initial status
 						returnData.push({
 							json: {
 								id: job.id,
@@ -694,7 +724,6 @@ export class StemSplit implements INodeType {
 							},
 						});
 					} else {
-						// Wait for completion
 						const timeoutSeconds = this.getNodeParameter("timeoutSeconds", i) as number;
 						const pollIntervalSeconds = this.getNodeParameter("pollIntervalSeconds", i) as number;
 
@@ -704,6 +733,7 @@ export class StemSplit implements INodeType {
 							Math.max(1, pollIntervalSeconds) * 1000,
 							Math.max(10, timeoutSeconds) * 1000,
 							i,
+							pollEndpoint,
 						);
 
 						returnData.push({
@@ -716,6 +746,106 @@ export class StemSplit implements INodeType {
 
 					continue;
 				}
+
+				// ── File / URL path ──
+				const outputType = this.getNodeParameter("outputType", i) as string;
+				const quality = this.getNodeParameter("quality", i) as string;
+				const outputFormat = this.getNodeParameter("outputFormat", i) as string;
+				const additionalOptions = this.getNodeParameter("additionalOptions", i) as IDataObject;
+
+				const jobBody: IDataObject = { outputType, quality, outputFormat };
+
+				if (additionalOptions.fileName) {
+					jobBody.fileName = additionalOptions.fileName;
+				}
+				if (additionalOptions.metadata) {
+					try {
+						const meta =
+							typeof additionalOptions.metadata === "string"
+								? JSON.parse(additionalOptions.metadata as string)
+								: additionalOptions.metadata;
+						if (meta && typeof meta === "object" && Object.keys(meta).length > 0) {
+							jobBody.metadata = meta;
+						}
+					} catch {
+						this.logger.warn(
+							`StemSplit: Could not parse metadata JSON — raw value: ${String(additionalOptions.metadata)}`,
+						);
+					}
+				}
+
+				if (inputSource === "url") {
+					// Direct URL submission
+					const sourceUrl = this.getNodeParameter("sourceUrl", i) as string;
+					if (!sourceUrl.trim()) {
+						throw new NodeOperationError(this.getNode(), "Audio URL is required", { itemIndex: i });
+					}
+					jobBody.sourceUrl = sourceUrl;
+				} else {
+					// Binary upload: POST /upload → PUT file (no auth) → use uploadKey
+					const binaryPropertyName = this.getNodeParameter("binaryPropertyName", i) as string;
+					const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
+
+					const filename = binaryData.fileName ?? "audio.mp3";
+					const mimeType = binaryData.mimeType ?? "audio/mpeg";
+
+					// Step 1: Request presigned upload URL from StemSplit API
+					const upload = await stemSplitRequest<UploadResponse>(this, "POST", "/upload", {
+						filename,
+						contentType: mimeType,
+					});
+
+					// Step 2: PUT binary data directly to the presigned S3/R2 URL — NO auth headers
+					const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
+					await uploadToPresignedUrl(this, upload.uploadUrl, buffer as Buffer, mimeType);
+
+					jobBody.uploadKey = upload.uploadKey;
+					if (!additionalOptions.fileName) {
+						jobBody.fileName = filename;
+					}
+				}
+
+				// Step 3: Create the job
+				const job = await stemSplitRequest<StemJobResponse>(this, "POST", "/jobs", jobBody);
+
+				if (operation === "separateStems") {
+					// Return immediately with job ID and initial status
+					returnData.push({
+						json: {
+							id: job.id,
+							status: job.status,
+							progress: job.progress,
+							creditsRequired: job.creditsRequired,
+							estimatedSeconds: job.estimatedSeconds,
+							createdAt: job.createdAt,
+							options: job.options as unknown as IDataObject,
+							input: job.input as unknown as IDataObject,
+							metadata: job.metadata as IDataObject,
+						},
+					});
+				} else {
+					// Wait for completion
+					const timeoutSeconds = this.getNodeParameter("timeoutSeconds", i) as number;
+					const pollIntervalSeconds = this.getNodeParameter("pollIntervalSeconds", i) as number;
+
+					const completed = await pollJobUntilComplete(
+						this,
+						job.id,
+						Math.max(1, pollIntervalSeconds) * 1000,
+						Math.max(10, timeoutSeconds) * 1000,
+						i,
+					);
+
+					returnData.push({
+						json: {
+							...(completed as unknown as IDataObject),
+							...flattenOutputs(completed.outputs),
+						},
+					});
+				}
+
+				continue;
+			}
 
 				throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
 					itemIndex: i,
